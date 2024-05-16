@@ -32,3 +32,9 @@ there are numerous optional callbacks to shim in additional code, if needed, in 
 - 🧪 finish making nim-clap a nimble package and switch over to it for the clap types, simplifying the code in offbeat itself
 - separate the one big nimplugin.nim file into multiple smaller files
 - set up tests
+
+### plugins made with offbeat
+- example2.nim (needs better name)
+  - gain, channel flip, channel rotate. a slightly weird take on a utility/tool/whatever your daw calls this plugin
+
+i would like to make more example plugins going forward, especially after i add synth support. the goal is to make plugins that are good enough to use and weird enough to stand out, rather than being the most boringest plugins you can think of. i think larger weird plugins will test the framework in unexpected ways and ensure it is working as expected.
