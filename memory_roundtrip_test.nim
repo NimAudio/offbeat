@@ -31,7 +31,8 @@ params.add newFloatParameter(
     24,
     0,
     0'u32,
-    5
+    smLerp,
+    100,
 )
 params.add newFloatParameter(
     "Flip",
@@ -39,7 +40,8 @@ params.add newFloatParameter(
     1,
     0,
     1'u32,
-    5
+    smLerp,
+    100,
 )
 params.add newFloatParameter(
     "Rotate",
@@ -47,7 +49,8 @@ params.add newFloatParameter(
     1,
     0,
     2'u32,
-    5
+    smLerp,
+    100,
 )
 
 var id_map* = params.id_table()
