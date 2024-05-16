@@ -43,8 +43,6 @@ depends on [nim-clap](https://github.com/morganholly/nim-clap). `nimble install 
 i would like to make more example plugins going forward, especially after i add synth support. the goal is to make plugins that are good enough to use and weird enough to stand out, rather than being the most boringest plugins you can think of. i think larger weird plugins will test the framework in unexpected ways and ensure it is working as expected.
 
 ### building
-
-#### mac
 to build, run the following command
 ```
 nim compile --out:"example2" --app:lib --threads:on ".../offbeat/example2.nim"
@@ -54,7 +52,9 @@ or for debugging
 nim compile --verbosity:2 --hints:off --out:"example2" --app:lib --forceBuild --threads:on -
 -lineDir:on --lineTrace:on --debuginfo:on ".../offbeat/example2.nim"
 ```
-and copy the binary (and .dSYM if debugging) into the provided example2.clap bundle for macos. if you change the filename, you will need to change the bundle plist to have the updated name.
+
+#### mac
+then copy the binary (and .dSYM if debugging) into the provided example2.clap bundle for macos. if you change the filename, you will need to change the bundle plist to have the updated name.
 
 #### other platforms
 i am not sure what is needed for windows or linux, but reaper at least doesn't care if it is bundled or not. i simply copied and modified the surge bundle.
