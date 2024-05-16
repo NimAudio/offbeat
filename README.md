@@ -5,6 +5,8 @@ offbeat is mainly built around it managing parameters for you. simply define the
 
 there are numerous optional callbacks to shim in additional code, if needed, in many places. many are more theoretical, while others have a clear imagined use, like the calculate callback on smoothed float parameters, which has been added in large part to enable smooth but optimized filter coefficient calculation.
 
+depends on [nim-clap](https://github.com/morganholly/nim-clap). `nimble install clap`
+
 ---
 
 ### features
@@ -29,7 +31,8 @@ there are numerous optional callbacks to shim in additional code, if needed, in 
   - maybe using generated macros?
   - i think i have a functional name to index mapping table set up, but i have not tried it out. it would at least be less error prone than raw indices
 - non-destructive modulation
-- 🧪 finish making nim-clap a nimble package and switch over to it for the clap types, simplifying the code in offbeat itself
+- restructure offbeat into multiple files
+  - clap bindings are now separated out
 - separate the one big nimplugin.nim file into multiple smaller files
 - set up tests
 
@@ -38,3 +41,20 @@ there are numerous optional callbacks to shim in additional code, if needed, in 
   - gain, channel flip, channel rotate. a slightly weird take on a utility/tool/whatever your daw calls this plugin
 
 i would like to make more example plugins going forward, especially after i add synth support. the goal is to make plugins that are good enough to use and weird enough to stand out, rather than being the most boringest plugins you can think of. i think larger weird plugins will test the framework in unexpected ways and ensure it is working as expected.
+
+### building
+
+#### mac
+to build, run the following command
+```
+nim compile --out:"example2" --app:lib --threads:on ".../offbeat/example2.nim"
+```
+or for debugging
+```
+nim compile --verbosity:2 --hints:off --out:"example2" --app:lib --forceBuild --threads:on -
+-lineDir:on --lineTrace:on --debuginfo:on ".../offbeat/example2.nim"
+```
+and copy the binary (and .dSYM if debugging) into the provided example2.clap bundle for macos. if you change the filename, you will need to change the bundle plist to have the updated name.
+
+#### other platforms
+i am not sure what is needed for windows or linux, but reaper at least doesn't care if it is bundled or not. i simply copied and modified the surge bundle.
