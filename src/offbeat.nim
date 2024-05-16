@@ -1,7 +1,9 @@
 import clap
 import std/[locks, math, strutils, bitops, tables, algorithm]
+import utils
 # import jsony
 export clap
+export utils
 
 type
     AutoModuSupport* = object
@@ -153,10 +155,10 @@ type
 
 
 
-proc nim_plug_audio_ports_count*(clap_plugin: ptr ClapPlugin, is_input: bool): uint32 {.cdecl.} =
+proc offbeat_audio_ports_count*(clap_plugin: ptr ClapPlugin, is_input: bool): uint32 {.cdecl.} =
     return 1
 
-proc nim_plug_audio_ports_get*(clap_plugin: ptr ClapPlugin,
+proc offbeat_audio_ports_get*(clap_plugin: ptr ClapPlugin,
                             index: uint32,
                             is_input: bool,
                             info: ptr ClapAudioPortInfo): bool {.cdecl.} =
@@ -170,23 +172,23 @@ proc nim_plug_audio_ports_get*(clap_plugin: ptr ClapPlugin,
     info.in_place_pair = CLAP_INVALID_ID
     return true
 
-let s_nim_plug_audio_ports* = ClapPluginAudioPorts(count: nim_plug_audio_ports_count, get: nim_plug_audio_ports_get)
+let s_offbeat_audio_ports* = ClapPluginAudioPorts(count: offbeat_audio_ports_count, get: offbeat_audio_ports_get)
 
-proc nim_plug_note_ports_count*(clap_plugin: ptr ClapPlugin, is_input: bool): uint32 {.cdecl.} =
+proc offbeat_note_ports_count*(clap_plugin: ptr ClapPlugin, is_input: bool): uint32 {.cdecl.} =
     return 0
 
-proc nim_plug_note_ports_get*(clap_plugin: ptr ClapPlugin,
+proc offbeat_note_ports_get*(clap_plugin: ptr ClapPlugin,
                             index: uint32,
                             is_input: bool,
                             info: ptr ClapNotePortInfo): bool {.cdecl.} =
     return false
 
-let s_nim_plug_note_ports* = ClapPluginNotePorts(count: nim_plug_note_ports_count, get: nim_plug_note_ports_get)
+let s_offbeat_note_ports* = ClapPluginNotePorts(count: offbeat_note_ports_count, get: offbeat_note_ports_get)
 
-proc nim_plug_latency_get*(clap_plugin: ptr ClapPlugin): uint32 {.cdecl.} =
+proc offbeat_latency_get*(clap_plugin: ptr ClapPlugin): uint32 {.cdecl.} =
     return cast[ptr Plugin](clap_plugin.plugin_data).latency
 
-let s_nim_plug_latency* = ClapPluginLatency(get: nim_plug_latency_get)
+let s_offbeat_latency* = ClapPluginLatency(get: offbeat_latency_get)
 
 
 
@@ -350,7 +352,7 @@ proc `->`*[T](i: var int, x: T) =
 proc `<-`*[T](i: var int, x: T) =
     i -= int(x.sizeof)
 
-proc nim_plug_state_save*(clap_plugin: ptr ClapPlugin, stream: ptr ClapOStream): bool {.cdecl.} =
+proc offbeat_state_save*(clap_plugin: ptr ClapPlugin, stream: ptr ClapOStream): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     sync_dsp_to_ui(plugin)
     if plugin.cb_pre_save != nil:
@@ -401,7 +403,7 @@ proc nim_plug_state_save*(clap_plugin: ptr ClapPlugin, stream: ptr ClapOStream):
             return false
     return true
 
-proc nim_plug_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream): bool {.cdecl.} =
+proc offbeat_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     withLock(plugin.controls_mutex):
         var buf_size: uint32 = 0
@@ -462,7 +464,7 @@ proc nim_plug_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream):
 ##
 ## other keys can be assigned per plugin, to allow for specialized handling, such as grouping data for a processor graph
 
-proc nim_plug_load_handle_tree*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], data_length: uint64, offset: uint64): void =
+proc offbeat_load_handle_tree*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], data_length: uint64, offset: uint64): void =
     var counter: uint64 = offset
     while counter < data_length + offset:
         var key: uint32 = read_as_walk[uint32](data, counter)
@@ -475,7 +477,7 @@ proc nim_plug_load_handle_tree*(plugin: ptr Plugin, data: ptr UncheckedArray[byt
             plugin.save_handlers[key](plugin, data, length, counter)
             counter += length
 
-proc nim_plug_load_main*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], data_length: uint64): bool =
+proc offbeat_load_main*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], data_length: uint64): bool =
     var counter: uint64 = 0
     var load_plugin_ptr: ptr Plugin
     # var needs_upgrade: bool = false
@@ -506,7 +508,7 @@ proc nim_plug_load_main*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], dat
     # echo($(counter + param_tree_length) & " out of " & $data_length)
     if counter + param_tree_length <= data_length:
         # echo("param tree fits")
-        nim_plug_load_handle_tree(load_plugin_ptr, data, param_tree_length, counter)
+        offbeat_load_handle_tree(load_plugin_ptr, data, param_tree_length, counter)
         counter += param_tree_length
         # var user_data_key: uint32 = read_as_walk[uint32](data, counter)
         # var user_data_length: uint64 = read_as_walk[uint64](data, counter)
@@ -529,7 +531,7 @@ proc nim_plug_load_main*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], dat
     #     copyMem(plugin, upgraded_plugin_A, Plugin.sizeof)
     return true
 
-proc nim_plug_load_handle_parameter*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], data_length: uint64, offset: uint64): void =
+proc offbeat_load_handle_parameter*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], data_length: uint64, offset: uint64): void =
     var counter: uint64 = offset
     if data_length > uint64(uint8.sizeof + uint32.sizeof):
         var id: uint32 = read_as_walk[uint32](data, counter)
@@ -617,20 +619,20 @@ proc nim_plug_load_handle_parameter*(plugin: ptr Plugin, data: ptr UncheckedArra
                     v.b_value = p.b_default
         v.has_changed = true
 
-proc nim_plug_save_total_lengths*(plugin: ptr Plugin, state: var StateTree): uint64 =
+proc offbeat_save_total_lengths*(plugin: ptr Plugin, state: var StateTree): uint64 =
     if len(state.tree) != 0:
         var total: uint64 = 0
         for t in state.tree.mitems:
-            total += nim_plug_save_total_lengths(plugin, t)
+            total += offbeat_save_total_lengths(plugin, t)
         state.data_length += total
     return state.data_length
 
-proc nim_plug_save_flatten_state_tree*(plugin: ptr Plugin, state: StateTree): ptr UncheckedArray[byte] =
+proc offbeat_save_flatten_state_tree*(plugin: ptr Plugin, state: StateTree): ptr UncheckedArray[byte] =
     # var counter: uint64 = 0
     # write_walk[uint32](result, state.key, counter)
     discard
 
-proc nim_plug_save_param_tree_size*(plugin: ptr Plugin): uint64 =
+proc offbeat_save_param_tree_size*(plugin: ptr Plugin): uint64 =
     result += uint64(uint32.sizeof)
     result += uint64(uint64.sizeof)
     for pv in plugin.ui_param_data:
@@ -648,7 +650,7 @@ proc nim_plug_save_param_tree_size*(plugin: ptr Plugin): uint64 =
                 result += uint64(uint8.sizeof)
                 result += uint64(uint8.sizeof)
 
-proc nim_plug_save_param_tree*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], offset: uint64): void =
+proc offbeat_save_param_tree*(plugin: ptr Plugin, data: ptr UncheckedArray[byte], offset: uint64): void =
     var counter: uint64 = offset
     write_walk[uint32](data, 0'u32, counter) # identify as tree blob
     var length_position = counter # copy of location of total size
@@ -672,15 +674,15 @@ proc nim_plug_save_param_tree*(plugin: ptr Plugin, data: ptr UncheckedArray[byte
         write_as[uint64](data, counter - param_length_position - uint64(uint64.sizeof), param_length_position)
     write_as[uint64](data, counter - length_position - uint64(uint64.sizeof), length_position)
 
-proc nim_plug_save_main*(plugin: ptr Plugin, data: ptr UncheckedArray[byte]): void =
+proc offbeat_save_main*(plugin: ptr Plugin, data: ptr UncheckedArray[byte]): void =
     var counter: uint64 = 0
     write_walk[uint32](data, plugin.version[0], counter)
     write_walk[uint32](data, plugin.version[1], counter)
     write_walk[uint32](data, plugin.version[2], counter)
     write_walk[uint32](data, plugin.version[3], counter)
-    nim_plug_save_param_tree(plugin, data, counter)
+    offbeat_save_param_tree(plugin, data, counter)
 
-proc nim_plug_new_state_save*(clap_plugin: ptr ClapPlugin, stream: ptr ClapOStream): bool {.cdecl.} =
+proc offbeat_new_state_save*(clap_plugin: ptr ClapPlugin, stream: ptr ClapOStream): bool {.cdecl.} =
     # echo("\n\nstart save")
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     sync_dsp_to_ui(plugin)
@@ -705,9 +707,9 @@ proc nim_plug_new_state_save*(clap_plugin: ptr ClapPlugin, stream: ptr ClapOStre
     #             stdout.write(" " & $p_d.b_value)
     #             stdout.write(" " & $p_u.b_value)
     #     stdout.write("\n")
-    var buf_size = nim_plug_save_param_tree_size(plugin) + 16 # version struct
+    var buf_size = offbeat_save_param_tree_size(plugin) + 16 # version struct
     var buffer: ptr UncheckedArray[byte] = cast[ptr UncheckedArray[byte]](alloc0(buf_size))
-    nim_plug_save_main(plugin, buffer)
+    offbeat_save_main(plugin, buffer)
     # stdout.write("saving: ")
     # for i in 0 ..< buf_size:
     #     stdout.write(buffer[i])
@@ -726,10 +728,10 @@ proc nim_plug_new_state_save*(clap_plugin: ptr ClapPlugin, stream: ptr ClapOStre
     dealloc(buffer)
     return true
 
-proc nim_plug_new_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream): bool {.cdecl.} =
+proc offbeat_new_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream): bool {.cdecl.} =
     # echo("\n\nstart load")
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
-    var buf_size = nim_plug_save_param_tree_size(plugin) + 16 # + version struct
+    var buf_size = offbeat_save_param_tree_size(plugin) + 16 # + version struct
     var buffer: ptr UncheckedArray[byte] = cast[ptr UncheckedArray[byte]](alloc0(buf_size))
     var read_size = 0'u64
     var status = 1
@@ -754,7 +756,7 @@ proc nim_plug_new_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStre
                 buffer = cast[ptr UncheckedArray[byte]](realloc0(buffer, buf_size, new_size))
                 buf_size = new_size
                 last_loop_reallocated = true
-    if read_size < nim_plug_save_param_tree_size(plugin) + 16:
+    if read_size < offbeat_save_param_tree_size(plugin) + 16:
         # echo("read_size too small: " & $read_size)
         return false
     # stdout.write("loading: ")
@@ -762,7 +764,7 @@ proc nim_plug_new_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStre
     #     stdout.write(buffer[i])
     #     stdout.write(" ")
     # stdout.write("end\n")
-    var load_main_result = nim_plug_load_main(plugin, buffer, read_size)
+    var load_main_result = offbeat_load_main(plugin, buffer, read_size)
     # for i in 0 ..< len(plugin.params):
     #     var p_d = plugin.dsp_param_data[i]
     #     var p_u = plugin.ui_param_data[i]
@@ -798,7 +800,7 @@ proc nim_plug_new_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStre
     #         of pkBool:
     #             p_d.b_value = p_u.b_value
 
-let s_nim_plug_state* = ClapPluginState(save: nim_plug_new_state_save, load: nim_plug_new_state_load)
+let s_offbeat_state* = ClapPluginState(save: offbeat_new_state_save, load: offbeat_new_state_load)
 
 
 
@@ -840,23 +842,23 @@ proc simple_lp*(smooth: var float64, coef: float64, next: float64): var float64 
     smooth += coef * (next - smooth)
     return smooth
 
-proc nim_plug_start_processing*(clap_plugin: ptr ClapPlugin): bool {.cdecl.} =
+proc offbeat_start_processing*(clap_plugin: ptr ClapPlugin): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     if plugin.cb_on_start_processing != nil:
         return plugin.cb_on_start_processing(plugin)
     return true
 
-proc nim_plug_stop_processing*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
+proc offbeat_stop_processing*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     if plugin.cb_on_stop_processing != nil:
         plugin.cb_on_stop_processing(plugin)
 
-proc nim_plug_reset*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
+proc offbeat_reset*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     if plugin.cb_on_reset != nil:
         plugin.cb_on_reset(plugin)
 
-proc nim_plug_process_event*(plugin: ptr Plugin, event: ptr ClapEventUnion): void {.cdecl.} =
+proc offbeat_process_event*(plugin: ptr Plugin, event: ptr ClapEventUnion): void {.cdecl.} =
     # myplug.dsp_controls.level = float32(event.kindParamValMod.val_amt)
     if event.kindParamValMod.header.space_id == 0:
         case event.kindParamValMod.header.event_type: # kindParamValMod for both, as the objects are identical
@@ -897,7 +899,7 @@ proc nim_plug_process_event*(plugin: ptr Plugin, event: ptr ClapEventUnion): voi
             else:
                 discard
 
-proc nim_plug_process*(clap_plugin: ptr ClapPlugin, process: ptr ClapProcess): ClapProcessStatus {.cdecl.} =
+proc offbeat_process*(clap_plugin: ptr ClapPlugin, process: ptr ClapProcess): ClapProcessStatus {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
 
     plugin.sync_ui_to_dsp(process.out_events)
@@ -917,7 +919,7 @@ proc nim_plug_process*(clap_plugin: ptr ClapPlugin, process: ptr ClapProcess): C
 
             # if event.kindNote.header.event_type == cetPARAM_VALUE:
             #     event.kindParamValMod.val_amt = 1
-            nim_plug_process_event(plugin, event)
+            offbeat_process_event(plugin, event)
             event_idx += 1
 
             if event_idx == num_events:
@@ -975,6 +977,20 @@ proc nim_plug_process*(clap_plugin: ptr ClapPlugin, process: ptr ClapProcess): C
 #93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 #93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 #93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# MARK: GUI (Sokol)
+#93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+#93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+#93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+
+#code
+
+
+
+#93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+#93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+#93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # MARK: params
 #93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 #93F6E9 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
@@ -982,11 +998,11 @@ proc nim_plug_process*(clap_plugin: ptr ClapPlugin, process: ptr ClapProcess): C
 
 
 
-proc nim_plug_params_count*(clap_plugin: ptr ClapPlugin): uint32 {.cdecl.} =
+proc offbeat_params_count*(clap_plugin: ptr ClapPlugin): uint32 {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     return uint32(len(plugin.params))
 
-proc nim_plug_params_get_info*(clap_plugin: ptr ClapPlugin, index: uint32, information: ptr ClapParamInfo): bool {.cdecl.} =
+proc offbeat_params_get_info*(clap_plugin: ptr ClapPlugin, index: uint32, information: ptr ClapParamInfo): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     # if index >= uint32(len(plugin.params)):
     #     return false
@@ -1050,7 +1066,7 @@ proc bool_to_float*(b: bool): float64 =
     else:
         return 0.0
 
-proc nim_plug_params_get_value*(clap_plugin: ptr ClapPlugin, id: ClapID, value: ptr float64): bool {.cdecl.} =
+proc offbeat_params_get_value*(clap_plugin: ptr ClapPlugin, id: ClapID, value: ptr float64): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     var index = uint32(id)
     if index >= uint32(len(plugin.params)):
@@ -1084,7 +1100,7 @@ template str_to_char_arr_ptr*(write: ptr UncheckedArray[char], read: string, wri
         i += 1
     write[i] = '\0'
 
-proc nim_plug_params_value_to_text*(clap_plugin: ptr ClapPlugin, id: ClapID, value: float64, display: ptr UncheckedArray[char], size: uint32): bool {.cdecl.} =
+proc offbeat_params_value_to_text*(clap_plugin: ptr ClapPlugin, id: ClapID, value: float64, display: ptr UncheckedArray[char], size: uint32): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     var index = uint32(id)
     if index >= uint32(len(plugin.params)):
@@ -1127,7 +1143,7 @@ proc simple_str_bool*(s: string): bool =
         else:
             return false
 
-proc nim_plug_params_text_to_value*(clap_plugin: ptr ClapPlugin, id: ClapID, display: cstring, value: ptr float64): bool {.cdecl.} =
+proc offbeat_params_text_to_value*(clap_plugin: ptr ClapPlugin, id: ClapID, display: cstring, value: ptr float64): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     var index = uint32(id)
     if index >= uint32(len(plugin.params)):
@@ -1149,20 +1165,20 @@ proc nim_plug_params_text_to_value*(clap_plugin: ptr ClapPlugin, id: ClapID, dis
                 value[] = bool_to_float(simple_str_bool($display))
         return true
 
-proc nim_plug_params_flush*(clap_plugin: ptr ClapPlugin, input: ptr ClapInputEvents, output: ptr ClapOutputEvents): void {.cdecl.} =
+proc offbeat_params_flush*(clap_plugin: ptr ClapPlugin, input: ptr ClapInputEvents, output: ptr ClapOutputEvents): void {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     let event_count = input.size(input)
     sync_ui_to_dsp(plugin, output)
     for i in 0 ..< event_count:
-        nim_plug_process_event(plugin, input.get(input, i))
+        offbeat_process_event(plugin, input.get(input, i))
 
-let s_nim_plug_params * = ClapPluginParams(
-        count         : nim_plug_params_count,
-        get_info      : nim_plug_params_get_info,
-        get_value     : nim_plug_params_get_value,
-        value_to_text : nim_plug_params_value_to_text,
-        text_to_value : nim_plug_params_text_to_value,
-        flush         : nim_plug_params_flush
+let s_offbeat_params * = ClapPluginParams(
+        count         : offbeat_params_count,
+        get_info      : offbeat_params_get_info,
+        get_value     : offbeat_params_get_value,
+        value_to_text : offbeat_params_value_to_text,
+        text_to_value : offbeat_params_text_to_value,
+        flush         : offbeat_params_flush
     )
 
 
@@ -1410,28 +1426,28 @@ proc convert_plugin_descriptor*(desc: PluginDesc): ClapPluginDescriptor =
         description: cstring(desc.description),
         features: allocCStringArray(desc.features))
 
-proc nim_plug_get_extension*(clap_plugin: ptr ClapPlugin, id: cstring): pointer {.cdecl.} =
+proc offbeat_get_extension*(clap_plugin: ptr ClapPlugin, id: cstring): pointer {.cdecl.} =
     case id:
         of CLAP_EXT_LATENCY:
-            return addr s_nim_plug_latency
+            return addr s_offbeat_latency
         of CLAP_EXT_AUDIO_PORTS:
-            return addr s_nim_plug_audio_ports
+            return addr s_offbeat_audio_ports
         of CLAP_EXT_NOTE_PORTS:
-            return addr s_nim_plug_note_ports
+            return addr s_offbeat_note_ports
         of CLAP_EXT_STATE:
-            return addr s_nim_plug_state
+            return addr s_offbeat_state
         of CLAP_EXT_PARAMS:
-            return addr s_nim_plug_params
+            return addr s_offbeat_params
 
 
-# var nim_plug_desc   *: PluginDesc
-var nim_plug_desc     *: ClapPluginDescriptor
-var nim_plug_params   *: seq[Parameter]
-var nim_plug_id_map   *: Table[uint32, int]
-var nim_plug_name_map *: Table[string, int]
+# var offbeat_desc   *: PluginDesc
+var offbeat_desc      *: ClapPluginDescriptor
+var offbeat_params    *: seq[Parameter]
+var offbeat_id_map    *: Table[uint32, int]
+var offbeat_name_map  *: Table[string, int]
 var cb_process_sample *: proc (plugin: ptr Plugin, in_left, in_right: float64, out_left, out_right: var float64, latency: uint32): void
 
-var nim_plug_user_data *: pointer = nil
+var offbeat_user_data *: pointer = nil
 
 var cb_on_start_processing *: proc (plugin: ptr Plugin): bool = nil
 var cb_on_stop_processing  *: proc (plugin: ptr Plugin): void = nil
@@ -1449,9 +1465,9 @@ var cb_deactivate     *: proc (plugin: ptr Plugin): void = nil
 var cb_on_main_thread *: proc (plugin: ptr Plugin): void = nil
 var cb_create         *: proc (plugin: ptr Plugin, host: ptr ClapHost): void = nil
 
-# let s_nim_plug_desc* = convert_plugin_descriptor(nim_plug_desc)
+# let s_offbeat_desc* = convert_plugin_descriptor(offbeat_desc)
 
-proc nim_plug_init*(clap_plugin: ptr ClapPlugin): bool {.cdecl.} =
+proc offbeat_init*(clap_plugin: ptr ClapPlugin): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     plugin.host_log          = cast[ptr ClapHostLog         ](plugin.host.get_extension(plugin.host, CLAP_EXT_LOG          ))
     plugin.host_thread_check = cast[ptr ClapHostThreadCheck ](plugin.host.get_extension(plugin.host, CLAP_EXT_THREAD_CHECK ))
@@ -1487,13 +1503,13 @@ proc nim_plug_init*(clap_plugin: ptr ClapPlugin): bool {.cdecl.} =
         cb_init(plugin)
     return true
 
-proc nim_plug_destroy*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
+proc offbeat_destroy*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     if cb_destroy != nil:
         cb_destroy(plugin)
     dealloc(plugin)
 
-proc nim_plug_activate*(clap_plugin: ptr ClapPlugin,
+proc offbeat_activate*(clap_plugin: ptr ClapPlugin,
                         sample_rate: float64,
                         min_frames_count: uint32,
                         max_frames_count: uint32): bool {.cdecl.} =
@@ -1526,37 +1542,37 @@ proc nim_plug_activate*(clap_plugin: ptr ClapPlugin,
             cb_activate(plugin, sample_rate, min_frames_count, max_frames_count)
     return true
 
-proc nim_plug_deactivate*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
+proc offbeat_deactivate*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     if cb_deactivate != nil:
         cb_deactivate(plugin)
 
-proc nim_plug_on_main_thread*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
+proc offbeat_on_main_thread*(clap_plugin: ptr ClapPlugin): void {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     if cb_on_main_thread != nil:
         cb_on_main_thread(plugin)
 
-proc nim_plug_create*(host: ptr ClapHost): ptr ClapPlugin {.cdecl.} =
+proc offbeat_create*(host: ptr ClapHost): ptr ClapPlugin {.cdecl.} =
     var plugin = cast[ptr Plugin](alloc0(Plugin.sizeof))
     plugin.host = host
     plugin.clap_plugin = cast[ptr ClapPlugin](alloc0(ClapPlugin.sizeof)) # remove if changed to not a pointer
-    plugin.clap_plugin.desc             = addr nim_plug_desc
+    plugin.clap_plugin.desc             = addr offbeat_desc
     plugin.clap_plugin.plugin_data      = plugin
-    plugin.clap_plugin.init             = nim_plug_init
-    plugin.clap_plugin.destroy          = nim_plug_destroy
-    plugin.clap_plugin.activate         = nim_plug_activate
-    plugin.clap_plugin.deactivate       = nim_plug_deactivate
-    plugin.clap_plugin.start_processing = nim_plug_start_processing
-    plugin.clap_plugin.stop_processing  = nim_plug_stop_processing
-    plugin.clap_plugin.reset            = nim_plug_reset
-    plugin.clap_plugin.process          = nim_plug_process
-    plugin.clap_plugin.get_extension    = nim_plug_get_extension
-    plugin.clap_plugin.on_main_thread   = nim_plug_on_main_thread
-    plugin.params   = nim_plug_params
-    plugin.id_map   = nim_plug_id_map
-    plugin.name_map = nim_plug_name_map
-    plugin.save_handlers[0'u32] = nim_plug_load_handle_tree
-    plugin.save_handlers[1'u32] = nim_plug_load_handle_parameter
+    plugin.clap_plugin.init             = offbeat_init
+    plugin.clap_plugin.destroy          = offbeat_destroy
+    plugin.clap_plugin.activate         = offbeat_activate
+    plugin.clap_plugin.deactivate       = offbeat_deactivate
+    plugin.clap_plugin.start_processing = offbeat_start_processing
+    plugin.clap_plugin.stop_processing  = offbeat_stop_processing
+    plugin.clap_plugin.reset            = offbeat_reset
+    plugin.clap_plugin.process          = offbeat_process
+    plugin.clap_plugin.get_extension    = offbeat_get_extension
+    plugin.clap_plugin.on_main_thread   = offbeat_on_main_thread
+    plugin.params   = offbeat_params
+    plugin.id_map   = offbeat_id_map
+    plugin.name_map = offbeat_name_map
+    plugin.save_handlers[0'u32] = offbeat_load_handle_tree
+    plugin.save_handlers[1'u32] = offbeat_load_handle_parameter
     plugin.dsp_param_data = @[]
     plugin.ui_param_data  = @[]
     for i in 0 ..< len(plugin.params):
@@ -1568,7 +1584,7 @@ proc nim_plug_create*(host: ptr ClapHost): ptr ClapPlugin {.cdecl.} =
             param: plugin.params[i],
             kind:  plugin.params[i].kind
         ))
-    plugin.data                   = nim_plug_user_data
+    plugin.data                   = offbeat_user_data
     plugin.cb_on_start_processing = cb_on_start_processing
     plugin.cb_on_stop_processing  = cb_on_stop_processing
     plugin.cb_on_reset            = cb_on_reset
@@ -1591,7 +1607,7 @@ type
 const plugin_count*: uint32 = 1
 
 let s_plugins: array[plugin_count, ClapDescCreate] = [
-    ClapDescCreate(desc: addr nim_plug_desc, create: nim_plug_create)
+    ClapDescCreate(desc: addr offbeat_desc, create: offbeat_create)
 ]
 
 proc plugin_factory_get_plugin_count*(factory: ptr ClapPluginFactory): uint32 {.cdecl.} =

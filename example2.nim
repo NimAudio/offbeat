@@ -1,4 +1,4 @@
-import src/nimplugin
+import src/offbeat
 import std/[locks, math, strutils]
 
 # proc db_af*(db: float64): float64 =
@@ -42,21 +42,6 @@ var p_rotate * = newFloatParameter(
 var params * = @[p_gain, p_flip, p_rotate]
 var id_map * = params.id_table()
 
-let desc * = PluginDesc(
-    id          : "com.nimclap.example2",
-    name        : "nim-clap abstraction layer example plugin",
-    vendor      : "nim-clap",
-    url         : "https://www.github.com/morganholly/nim-clap",
-    manual_url  : "https://www.github.com/morganholly/nim-clap",
-    support_url : "https://www.github.com/morganholly/nim-clap",
-    version     : "0.1",
-    description : "example effect plugin",
-    features    : @[CLAP_PLUGIN_FEATURE_AUDIO_EFFECT,
-                    CLAP_PLUGIN_FEATURE_EQUALIZER,
-                    CLAP_PLUGIN_FEATURE_DISTORTION,
-                    CLAP_PLUGIN_FEATURE_STEREO]
-)
-
 proc lerp*(x, y, mix: float32): float32 =
     result = (y - x) * mix + x
 
@@ -71,8 +56,7 @@ proc process*(plugin: ptr Plugin, in_left, in_right: float64, out_left, out_righ
     out_right = flipped_r * a_cos - flipped_l * a_sin
 
 let features*: cstringArray = allocCStringArray([CLAP_PLUGIN_FEATURE_AUDIO_EFFECT,
-                                                CLAP_PLUGIN_FEATURE_EQUALIZER,
-                                                CLAP_PLUGIN_FEATURE_DISTORTION,
+                                                CLAP_PLUGIN_FEATURE_UTILITY,
                                                 CLAP_PLUGIN_FEATURE_STEREO])
 
 let clap_desc* = ClapPluginDescriptor(
@@ -80,18 +64,17 @@ let clap_desc* = ClapPluginDescriptor(
             major    : CLAP_VERSION_MAJOR,
             minor    : CLAP_VERSION_MINOR,
             revision : CLAP_VERSION_REVISION),
-        id          : "com.nimclap.example2",
-        name        : "nim-clap abstraction layer example plugin",
-        vendor      : "nim-clap",
-        url         : "https://www.github.com/morganholly/nim-clap",
-        manual_url  : "https://www.github.com/morganholly/nim-clap",
-        support_url : "https://www.github.com/morganholly/nim-clap",
-        version     : "0.1",
+        id          : "com.offbeat.example",
+        name        : "offbeat plugin framework example plugin",
+        vendor      : "offbeat",
+        url         : "https://www.github.com/morganholly/offbeat",
+        manual_url  : "https://www.github.com/morganholly/offbeat",
+        support_url : "https://www.github.com/morganholly/offbeat",
+        version     : "0.2",
         description : "example effect plugin",
         features    : features)
 
-# nim_plug_desc    = desc
-nim_plug_desc     = clap_desc
-nim_plug_params   = params
-nim_plug_id_map   = id_map
+offbeat_desc      = clap_desc
+offbeat_params    = params
+offbeat_id_map    = id_map
 cb_process_sample = process
