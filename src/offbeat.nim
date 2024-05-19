@@ -998,6 +998,15 @@ proc offbeat_process*(clap_plugin: ptr ClapPlugin, process: ptr ClapProcess): Cl
 
 
 
+proc param_f*(plugin: ptr Plugin, name: string): float =
+    return plugin.dsp_param_data[plugin.name_map[name]].f_value
+
+proc param_i*(plugin: ptr Plugin, name: string): int =
+    return plugin.dsp_param_data[plugin.name_map[name]].i_value
+
+proc param_b*(plugin: ptr Plugin, name: string): bool =
+    return plugin.dsp_param_data[plugin.name_map[name]].b_value
+
 proc offbeat_params_count*(clap_plugin: ptr ClapPlugin): uint32 {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)
     return uint32(len(plugin.params))

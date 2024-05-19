@@ -41,6 +41,7 @@ var p_rotate * = newFloatParameter(
 
 var params * = @[p_gain, p_flip, p_rotate]
 var id_map * = params.id_table()
+var name_map * = params.name_table()
 
 proc lerp*(x, y, mix: float32): float32 =
     result = (y - x) * mix + x
@@ -77,4 +78,5 @@ let clap_desc* = ClapPluginDescriptor(
 offbeat_desc      = clap_desc
 offbeat_params    = params
 offbeat_id_map    = id_map
+offbeat_name_map  = name_map
 cb_process_sample = process
