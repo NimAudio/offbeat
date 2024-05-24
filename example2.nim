@@ -1,5 +1,6 @@
 import src/offbeat
-import std/[locks, math, strutils]
+import src/utils
+import std/[math, strutils]
 
 # proc db_af*(db: float64): float64 =
 #     result = pow(10, 0.05 * db)
