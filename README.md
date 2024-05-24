@@ -31,9 +31,6 @@ depends on [nim-clap](https://github.com/morganholly/nim-clap). `nimble install 
   - maybe using generated macros?
   - i think i have a functional name to index mapping table set up, but i have not tried it out. it would at least be less error prone than raw indices
 - non-destructive modulation
-- restructure offbeat into multiple files
-  - clap bindings are now separated out
-- separate the one big nimplugin.nim file into multiple smaller files
 - set up tests
 
 ### plugins made with offbeat
