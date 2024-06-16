@@ -45,7 +45,7 @@ type
                 f_smooth_ms     *: float64 = 50
                 f_smooth_mode   *: SmoothMode = smLerp
                 f_calculate     *: proc (plugin: ptr Plugin, val: float64, id: int): void = nil
-            of pkInt:
+            of pkInt: # maybe int params should get calculate as well. also maybe add enum kind eventually
                 i_min       *: int64
                 i_max       *: int64
                 i_default   *: int64
@@ -114,6 +114,7 @@ type
         ui_param_data   *: seq[ParameterValue]
         dsp_param_data  *: seq[ParameterValue]
         smoothed_params *: seq[int] # indices into arrays
+        # calc_cb_params  *: seq[int] # indices into arrays
         id_map          *: Table[uint32, int]
         name_map        *: Table[string, int]
         save_handlers   *: Table[uint32, proc (plugin: ptr Plugin, data: ptr UncheckedArray[byte], data_length: uint64, offset: uint64): void]

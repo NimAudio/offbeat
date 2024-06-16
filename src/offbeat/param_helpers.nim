@@ -36,7 +36,7 @@ proc newFloatParameter*(
         f_as_string     : as_string,
         f_remap         : remap,
         f_smooth_cutoff : if smooth_mode == smFilter: smooth_val else: 0,
-        f_smooth_ms     : if smooth_mode == smFilter: smooth_val else: 0,
+        f_smooth_ms     : if smooth_mode == smLerp: smooth_val else: 0,
         f_smooth_mode   : smooth_mode,
         f_calculate     : calculate,
         id              : id,

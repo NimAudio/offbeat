@@ -1,5 +1,4 @@
 import src/offbeat
-import src/utils
 import std/[math, strutils]
 
 # proc db_af*(db: float64): float64 =
@@ -66,7 +65,7 @@ let clap_desc* = ClapPluginDescriptor(
             major    : CLAP_VERSION_MAJOR,
             minor    : CLAP_VERSION_MINOR,
             revision : CLAP_VERSION_REVISION),
-        id          : "com.offbeat.example",
+        id          : "com.offbeat.example2",
         name        : "offbeat plugin framework example plugin",
         vendor      : "offbeat",
         url         : "https://www.github.com/morganholly/offbeat",

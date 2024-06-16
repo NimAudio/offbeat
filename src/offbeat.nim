@@ -1,11 +1,9 @@
 import clap
 import std/[locks, math, tables]
-# import utils
-import offbeat/[types, ports, state, process, params, param_helpers]
+import offbeat/[types, ports, state, process, params, param_helpers, utils]
 # import jsony
 export clap
-# export utils
-export types, ports, state, process, params, param_helpers
+export types, ports, state, process, params, param_helpers, utils
 
 
 # entry point
@@ -86,6 +84,8 @@ proc offbeat_init*(clap_plugin: ptr ClapPlugin): bool {.cdecl.} =
                 plugin.dsp_param_data[i].f_value     = remapped
                 plugin.ui_param_data[i].f_raw_value = p.f_default
                 plugin.ui_param_data[i].f_value     = remapped
+                if p.f_calculate != nil:
+                    p.f_calculate(plugin, remapped, i)
             of pkInt:
                 var remapped = if p.i_remap != nil:
                                 p.i_remap(p.i_default)
@@ -138,6 +138,10 @@ proc offbeat_activate*(clap_plugin: ptr ClapPlugin,
                             plugin.params[i].f_smooth_mode = smNone
                     of smNone:
                         discard
+        # plugin.calc_cb_params = @[]
+        # for i in 0 ..< len(plugin.params):
+        #     if plugin.params[i].kind == pkFloat: # maybe int and bool should get calculate callbacks, this should handle that better than doing it in the 
+        #         if plugin.params[i].f_calculate != nil
         if cb_activate != nil:
             cb_activate(plugin, sample_rate, min_frames_count, max_frames_count)
     return true

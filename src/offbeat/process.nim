@@ -1,35 +1,6 @@
 import clap
-import types, state
+import types, state, utils
 import std/[locks, math, tables]
-
-
-proc lerp*(x, y, mix: float32): float32 =
-    result = (y - x) * mix + x
-
-const pi *: float64 = 3.1415926535897932384626433832795
-
-# based on reaktor one pole lowpass coef calculation
-proc onepole_lp_coef*(freq: float64, sr: float64): float64 =
-    var input: float64 = min(0.5 * pi, max(0.001, freq) * (pi / sr));
-    var tanapprox: float64 = (((0.0388452 - 0.0896638 * input) * input + 1.00005) * input) /
-                            ((0.0404318 - 0.430871 * input) * input + 1);
-    return tanapprox / (tanapprox + 1);
-
-# based on reaktor one pole lowpass
-proc onepole_lp*(last: var float64, coef: float64, src: float64): float64 =
-    var delta_scaled: float64 = (src - last) * coef;
-    var dst: float64 = delta_scaled + last;
-    last = delta_scaled + dst;
-    return dst;
-
-proc simple_lp_coef*(freq: float64, sr: float64): float64 =
-    var w: float64 = (2 * pi * freq) / sr;
-    var twomcos: float64 = 2 - cos(w);
-    return 1 - (twomcos - sqrt(twomcos * twomcos - 1));
-
-proc simple_lp*(smooth: var float64, coef: float64, next: float64): var float64 =
-    smooth += coef * (next - smooth)
-    return smooth
 
 proc offbeat_start_processing*(clap_plugin: ptr ClapPlugin): bool {.cdecl.} =
     var plugin = cast[ptr Plugin](clap_plugin.plugin_data)

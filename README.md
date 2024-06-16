@@ -36,6 +36,8 @@ depends on [nim-clap](https://github.com/morganholly/nim-clap). `nimble install 
 ### plugins made with offbeat
 - example2.nim (needs better name)
   - gain, channel flip, channel rotate. a slightly weird take on a utility/tool/whatever your daw calls this plugin
+- example3.nim
+  - bass exciter/enhancer. demos userdata pointer and calculate callback.
 
 i would like to make more example plugins going forward, especially after i add synth support. the goal is to make plugins that are good enough to use and weird enough to stand out, rather than being the most boringest plugins you can think of. i think larger weird plugins will test the framework in unexpected ways and ensure it is working as expected.
 
