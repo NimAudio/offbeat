@@ -23,6 +23,7 @@ type UserData* = object
     last_lp_orig_2 *: float64
 
 var userdata = cast[ptr UserData](alloc0(UserData.sizeof))
+cb_destroy = proc (plugin: ptr Plugin): void = dealloc(userdata)
 
 proc cutoff_remap(x: float64): float64 = lerp(30, 5000, x * x * x)
 proc cutoff_remap_inv(x: float64): float64 = cbrt((x - 30) / 4970)

@@ -201,7 +201,9 @@ proc offbeat_state_save*(clap_plugin: ptr ClapPlugin, stream: ptr ClapOStream): 
         if status > 0:
             written_size += status
         else:
+            dealloc(buffer)
             return false
+    dealloc(buffer)
     return true
 
 proc offbeat_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream): bool {.cdecl.} =
@@ -218,6 +220,7 @@ proc offbeat_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream): 
                 elif status == 0:
                     break
                 else:
+                    dealloc(buffer)
                     return false
             var data_byte_count = plugin.cb_data_byte_count(plugin)
             for b_i in countup(0, int(buf_size) - data_byte_count, (
@@ -250,6 +253,7 @@ proc offbeat_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream): 
                 plugin.cb_data_from_bytes(plugin, data_bytes)
             if plugin.cb_post_load != nil:
                 plugin.cb_post_load(plugin)
+            dealloc(buffer)
             return true
         else:
             return false
@@ -544,6 +548,7 @@ proc offbeat_new_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStrea
             break # finished reading
         elif status < 0:
             # echo("read status: " & $status)
+            dealloc(buffer)
             return false # error
         else:
             # echo("read " & $status & " bytes")
@@ -559,6 +564,7 @@ proc offbeat_new_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStrea
                 last_loop_reallocated = true
     if read_size < offbeat_save_param_tree_size(plugin) + 16:
         # echo("read_size too small: " & $read_size)
+        dealloc(buffer)
         return false
     # stdout.write("loading: ")
     # for i in 0 ..< read_size:
