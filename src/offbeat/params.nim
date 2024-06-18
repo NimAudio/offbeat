@@ -60,6 +60,8 @@ proc offbeat_params_get_info*(clap_plugin: ptr ClapPlugin, index: uint32, inform
                 max_val     = float64(param.i_max)
                 default_val = float64(param.i_default)
             of pkBool:
+                min_val     = 0.0
+                max_val     = 1.0
                 default_val = if param.b_default: 1.0 else: 0.0
         information[] = ClapParamInfo(
             id            : ClapID(param.id),

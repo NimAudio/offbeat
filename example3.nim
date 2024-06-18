@@ -56,7 +56,17 @@ var p_amount * = newFloatParameter(
     db_af
 )
 
-var params * = @[p_level, p_cutoff, p_amount]
+var p_polarity * = newBoolParameter(
+    "Polarity",
+    false,
+    3'u32,
+    smLerp,
+    100,
+    "Inverse",
+    "Normal"
+)
+
+var params * = @[p_level, p_cutoff, p_amount, p_polarity]
 var id_map * = params.id_table()
 var name_map * = params.name_table()
 
@@ -105,6 +115,7 @@ proc process_channel(plugin: ptr Plugin, input: float64, output: var float64): v
     var orig_lp2 = onepole_lp(user_data.last_lp_orig_1, userdata.cutoff_coef, in_scaled)
     orig_lp2 = onepole_lp(user_data.last_lp_orig_2, userdata.cutoff_coef, orig_lp2)
     output = ((orig_lp2 - dist_lp2) * plugin.dsp_param_data[2].value + in_scaled) * plugin.dsp_param_data[0].value
+    output = (lerp(orig_lp2 - dist_lp2, dist_lp2 - orig_lp2, plugin.dsp_param_data[3].value) * plugin.dsp_param_data[2].value + in_scaled) * plugin.dsp_param_data[0].value
 
 proc process*(plugin: ptr Plugin, in_left, in_right: float64, out_left, out_right: var float64, latency: uint32): void =
     process_channel(plugin, in_left, out_left)
