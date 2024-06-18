@@ -29,31 +29,51 @@ proc offbeat_process_event*(plugin: ptr Plugin, event: ptr ClapEventUnion): void
                     var param = plugin.params[index]
                     case param.kind:
                         of pkFloat:
-                            var last_value = param_data.f_value
                             param_data.f_raw_value = event.kindParamValMod.val_amt
-                            param_data.f_next_value = if param.f_remap != nil:
+                            param_data.next_value = if param.f_remap != nil:
                                                         param.f_remap(event.kindParamValMod.val_amt)
                                                     else:
                                                         event.kindParamValMod.val_amt
                             param_data.has_changed = true # maybe set up converters to set this and automatically handle conversion based on kind
-                            case param.f_smooth_mode:
+                            case param.smooth_mode:
                                 of smLerp:
-                                    param_data.f_smooth_sample_counter = param_data.f_smooth_samples
-                                    param_data.f_smooth_step = (param_data.f_next_value - last_value) / float64(param_data.f_smooth_samples)
+                                    param_data.smooth_sample_counter = param_data.smooth_samples
+                                    param_data.smooth_step = (param_data.next_value - param_data.value) / float64(param_data.smooth_samples)
                                 of smFilter:
                                     discard
                                 of smNone:
-                                    param_data.f_value = param_data.f_next_value
+                                    param_data.value = param_data.next_value
                         of pkInt:
                             param_data.i_raw_value = int64(event.kindParamValMod.val_amt)
                             param_data.i_value = if param.i_remap != nil:
                                                         param.i_remap(param_data.i_raw_value)
                                                     else:
                                                         param_data.i_raw_value
+                            param_data.next_value = float64(param_data.i_value)
                             param_data.has_changed = true
+                            case param.smooth_mode:
+                                of smLerp:
+                                    param_data.smooth_sample_counter = param_data.smooth_samples
+                                    param_data.smooth_step = (param_data.next_value - param_data.value) / float64(param_data.smooth_samples)
+                                of smFilter:
+                                    discard
+                                of smNone:
+                                    param_data.value = param_data.next_value
                         of pkBool:
                             param_data.b_value = event.kindParamValMod.val_amt > 0.5
+                            if param.b_map != nil:
+                                param_data.next_value = param.b_map(param_data.b_value)
+                            else:
+                                param_data.next_value = if param_data.b_value: 1.0 else: 0.0
                             param_data.has_changed = true
+                            case param.smooth_mode:
+                                of smLerp:
+                                    param_data.smooth_sample_counter = param_data.smooth_samples
+                                    param_data.smooth_step = (param_data.next_value - param_data.value) / float64(param_data.smooth_samples)
+                                of smFilter:
+                                    discard
+                                of smNone:
+                                    param_data.value = param_data.next_value
             of cetPARAM_MOD: # per voice modulation
                 discard
             else:
@@ -89,24 +109,59 @@ proc offbeat_process*(clap_plugin: ptr ClapPlugin, process: ptr ClapProcess): Cl
         # i = next_event_frame
         while i < next_event_frame:
             for p in plugin.smoothed_params:
-                if plugin.params[p].kind == pkFloat:
-                    var param_data = plugin.dsp_param_data[p]
-                    case plugin.params[p].f_smooth_mode:
-                        of smLerp:
-                            if param_data.f_smooth_sample_counter > 0:
-                                param_data.f_value += param_data.f_smooth_step
-                                param_data.f_smooth_sample_counter -= 1
-                                if plugin.params[p].f_calculate != nil:
-                                    plugin.params[p].f_calculate(plugin, param_data.f_value, p)
-                        of smFilter:
-                            discard simple_lp( # mutates first input
-                                        param_data.f_value,
-                                        param_data.f_smooth_coef,
-                                        param_data.f_next_value)
-                            if plugin.params[p].f_calculate != nil:
-                                plugin.params[p].f_calculate(plugin, param_data.f_value, p)
-                        of smNone:
-                            discard
+                var param_data = plugin.dsp_param_data[p]
+                case plugin.params[p].kind:
+                    of pkFloat:
+                        case plugin.params[p].smooth_mode:
+                            of smLerp:
+                                if param_data.smooth_sample_counter > 0:
+                                    param_data.value += param_data.smooth_step
+                                    param_data.smooth_sample_counter -= 1
+                                    if plugin.params[p].calculate != nil:
+                                        plugin.params[p].calculate(plugin, param_data.value, p)
+                            of smFilter:
+                                discard simple_lp( # mutates first input
+                                            param_data.value,
+                                            param_data.smooth_coef,
+                                            param_data.next_value)
+                                if plugin.params[p].calculate != nil:
+                                    plugin.params[p].calculate(plugin, param_data.value, p)
+                            of smNone:
+                                discard
+                    of pkInt:
+                        case plugin.params[p].smooth_mode:
+                            of smLerp:
+                                if param_data.smooth_sample_counter > 0:
+                                    param_data.value += param_data.smooth_step
+                                    param_data.smooth_sample_counter -= 1
+                                    if plugin.params[p].calculate != nil:
+                                        plugin.params[p].calculate(plugin, param_data.value, p)
+                            of smFilter:
+                                discard simple_lp( # mutates first input
+                                            param_data.value,
+                                            param_data.smooth_coef,
+                                            param_data.next_value)
+                                if plugin.params[p].calculate != nil:
+                                    plugin.params[p].calculate(plugin, param_data.value, p)
+                            of smNone:
+                                discard
+                    of pkBool:
+                        case plugin.params[p].smooth_mode:
+                            of smLerp:
+                                if param_data.smooth_sample_counter > 0:
+                                    param_data.value += param_data.smooth_step
+                                    param_data.smooth_sample_counter -= 1
+                                    if plugin.params[p].calculate != nil:
+                                        plugin.params[p].calculate(plugin, param_data.value, p)
+                            of smFilter:
+                                discard simple_lp( # mutates first input
+                                            param_data.value,
+                                            param_data.smooth_coef,
+                                            param_data.next_value)
+                                if plugin.params[p].calculate != nil:
+                                    plugin.params[p].calculate(plugin, param_data.value, p)
+                            of smNone:
+                                discard
             var is_left_constant  = (process.audio_inputs[0].constant_mask and 0b01) != 0
             var is_right_constant = (process.audio_inputs[0].constant_mask and 0b10) != 0
             if process.audio_inputs[0].data64 != nil:

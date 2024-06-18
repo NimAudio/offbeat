@@ -88,7 +88,7 @@ proc c3cheapsat_l(x: float64, level: float64, invlevel: float64): float64 =
 let db_m30_sq = db_af(-30) * db_af(-30)
 
 proc process_channel(plugin: ptr Plugin, input: float64, output: var float64): void =
-    var inv_scale = 1 / plugin.dsp_param_data[0].f_value
+    var inv_scale = 1 / plugin.dsp_param_data[0].value
     var in_scaled = input * inv_scale
     var user_data = cast[ptr UserData](plugin.data)
     var lp = onepole_lp(user_data.cutoff_last, user_data.cutoff_coef, in_scaled)
@@ -104,7 +104,7 @@ proc process_channel(plugin: ptr Plugin, input: float64, output: var float64): v
     # output = dist_lp2 * plugin.dsp_param_data[0].f_value
     var orig_lp2 = onepole_lp(user_data.last_lp_orig_1, userdata.cutoff_coef, in_scaled)
     orig_lp2 = onepole_lp(user_data.last_lp_orig_2, userdata.cutoff_coef, orig_lp2)
-    output = ((orig_lp2 - dist_lp2) * plugin.dsp_param_data[2].f_value + in_scaled) * plugin.dsp_param_data[0].f_value
+    output = ((orig_lp2 - dist_lp2) * plugin.dsp_param_data[2].value + in_scaled) * plugin.dsp_param_data[0].value
 
 proc process*(plugin: ptr Plugin, in_left, in_right: float64, out_left, out_right: var float64, latency: uint32): void =
     process_channel(plugin, in_left, out_left)

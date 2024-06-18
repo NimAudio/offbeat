@@ -1,10 +1,10 @@
 import clap
 import types, state, process
-import std/[locks, strutils, tables]
+import std/[locks, strutils, tables, editdistance]
 
 
 proc param_f*(plugin: ptr Plugin, name: string): float =
-    return plugin.dsp_param_data[plugin.name_map[name]].f_value
+    return plugin.dsp_param_data[plugin.name_map[name]].value
 
 proc param_i*(plugin: ptr Plugin, name: string): int =
     return plugin.dsp_param_data[plugin.name_map[name]].i_value
@@ -176,7 +176,14 @@ proc offbeat_params_text_to_value*(clap_plugin: ptr ClapPlugin, id: ClapID, disp
                 else:
                     value[] = float64(parseFloat($display))
             of pkBool:
-                value[] = bool_to_float(simple_str_bool($display))
+                let ed_true = editDistance(($display).strip().toLowerAscii(), param.true_str)
+                let ed_false = editDistance(($display).strip().toLowerAscii(), param.false_str)
+                if ed_true < ed_false:
+                    value[] = 1.0
+                elif ed_true > ed_false:
+                    value[] = 0.0
+                else:
+                    value[] = bool_to_float(simple_str_bool($display))
         return true
 
 proc offbeat_params_flush*(clap_plugin: ptr ClapPlugin, input: ptr ClapInputEvents, output: ptr ClapOutputEvents): void {.cdecl.} =

@@ -10,7 +10,7 @@ proc cond_set*(c_to, c_from: var ParameterValue): void =
         case c_from.kind:
             of pkFloat:
                 c_to.f_raw_value = c_from.f_raw_value
-                c_to.f_value = c_from.f_value
+                c_to.value = c_from.value
             of pkInt:
                 c_to.i_raw_value = c_from.i_raw_value
                 c_to.i_value = c_from.i_value
@@ -25,7 +25,7 @@ proc cond_set_with_event*(c_to, c_from: var ParameterValue, id: ClapID, output: 
         case c_from.kind:
             of pkFloat:
                 c_to.f_raw_value = c_from.f_raw_value
-                c_to.f_value = c_from.f_value
+                c_to.value = c_from.value
                 value = c_from.f_raw_value
             of pkInt:
                 c_to.i_raw_value = c_from.i_raw_value
@@ -235,7 +235,7 @@ proc offbeat_state_load*(clap_plugin: ptr ClapPlugin, stream: ptr ClapIStream): 
                 case v.kind:
                     of pkFloat:
                         v.f_raw_value = read_as[float64](buffer + b_i + i_offset)
-                        v.f_value = if p.f_remap != nil:
+                        v.value = if p.f_remap != nil:
                                                 p.f_remap(v.f_raw_value)
                                             else:
                                                 v.f_raw_value
@@ -351,7 +351,7 @@ proc offbeat_load_handle_parameter*(plugin: ptr Plugin, data: ptr UncheckedArray
                         of pkFloat: # save and plugin data match
                             v.f_raw_value = read_as[float64](data, counter)
                             # echo("f_raw: " & $v.f_raw_value)
-                            v.f_value = if p.f_remap != nil:
+                            v.value = if p.f_remap != nil:
                                             p.f_remap(v.f_raw_value)
                                         else:
                                             v.f_raw_value
@@ -372,7 +372,7 @@ proc offbeat_load_handle_parameter*(plugin: ptr Plugin, data: ptr UncheckedArray
                         of pkFloat: # saved an int, loaded as float
                             v.f_raw_value = float64(read_as[int64](data, counter))
                             # echo("f_raw: " & $v.f_raw_value)
-                            v.f_value = if p.f_remap != nil:
+                            v.value = if p.f_remap != nil:
                                             p.f_remap(v.f_raw_value)
                                         else:
                                             v.f_raw_value
@@ -408,7 +408,7 @@ proc offbeat_load_handle_parameter*(plugin: ptr Plugin, data: ptr UncheckedArray
                                 else:
                                     p.f_default
                     v.f_raw_value = p.f_default
-                    v.f_value     = remapped
+                    v.value       = remapped
                 of pkInt:
                     var remapped = if p.i_remap != nil:
                                     p.i_remap(p.i_default)

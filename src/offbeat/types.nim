@@ -41,11 +41,7 @@ type
                 f_as_value      *: proc (str: string): float64
                 f_as_string     *: proc (val: float64): string
                 f_remap         *: proc (val: float64): float64
-                f_smooth_cutoff *: float64 = 10
-                f_smooth_ms     *: float64 = 50
-                f_smooth_mode   *: SmoothMode = smLerp
-                f_calculate     *: proc (plugin: ptr Plugin, val: float64, id: int): void = nil
-            of pkInt: # maybe int params should get calculate as well. also maybe add enum kind eventually
+            of pkInt: # maybe add enum kind eventually
                 i_min       *: int64
                 i_max       *: int64
                 i_default   *: int64
@@ -53,18 +49,23 @@ type
                 i_as_string *: proc (val: int64): string
                 i_remap     *: proc (val: int64): int64
             of pkBool:
-                b_default *: bool
-                true_str  *: string
-                false_str *: string
-        id          *: uint32
-        is_periodic *: bool
-        is_hidden   *: bool
-        is_readonly *: bool
-        is_bypass   *: bool
-        is_enum     *: bool
-        req_process *: bool
-        automation  *: AutoModuSupport = true
-        modulation  *: AutoModuSupport = false
+                b_default   *: bool
+                true_str    *: string
+                false_str   *: string
+                b_map       *: proc (val: bool): float64
+        smooth_cutoff *: float64 = 10
+        smooth_ms     *: float64 = 50
+        smooth_mode   *: SmoothMode = smLerp
+        calculate     *: proc (plugin: ptr Plugin, val: float64, id: int): void = nil
+        id            *: uint32
+        is_periodic   *: bool
+        is_hidden     *: bool
+        is_readonly   *: bool
+        is_bypass     *: bool
+        is_enum       *: bool
+        req_process   *: bool
+        automation    *: AutoModuSupport = true
+        modulation    *: AutoModuSupport = false
 
     ParameterValue* = ref object
         #TODO add modulation arrays or whatever
@@ -73,19 +74,19 @@ type
         param *: Parameter
         case kind *: ParameterKind:
             of pkFloat:
-                f_raw_value             *: float64
-                f_next_value            *: float64
-                f_value                 *: float64
-                f_smooth_coef           *: float64
-                f_smooth_samples        *: uint64
-                f_smooth_step           *: float64
-                f_smooth_sample_counter *: uint64
+                f_raw_value *: float64
             of pkInt:
                 i_raw_value *: int64
                 i_value     *: int64
             of pkBool:
-                b_value *: bool
+                b_value     *: bool
         has_changed *: bool
+        next_value            *: float64
+        value                 *: float64
+        smooth_coef           *: float64
+        smooth_samples        *: uint64
+        smooth_step           *: float64
+        smooth_sample_counter *: uint64
 
     PluginDesc* = object
         id          *: string

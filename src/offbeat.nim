@@ -81,11 +81,11 @@ proc offbeat_init*(clap_plugin: ptr ClapPlugin): bool {.cdecl.} =
                             else:
                                 p.f_default
                 plugin.dsp_param_data[i].f_raw_value = p.f_default
-                plugin.dsp_param_data[i].f_value     = remapped
-                plugin.ui_param_data[i].f_raw_value = p.f_default
-                plugin.ui_param_data[i].f_value     = remapped
-                if p.f_calculate != nil:
-                    p.f_calculate(plugin, remapped, i)
+                plugin.dsp_param_data[i].value       = remapped
+                plugin.ui_param_data[i].f_raw_value  = p.f_default
+                plugin.ui_param_data[i].value        = remapped
+                if p.calculate != nil:
+                    p.calculate(plugin, remapped, i)
             of pkInt:
                 var remapped = if p.i_remap != nil:
                                 p.i_remap(p.i_default)
@@ -118,26 +118,26 @@ proc offbeat_activate*(clap_plugin: ptr ClapPlugin,
         plugin.sample_rate = sample_rate
         plugin.smoothed_params = @[]
         for i in 0 ..< len(plugin.params):
-            if plugin.params[i].kind == pkFloat:
-                case plugin.params[i].f_smooth_mode:
-                    of smFilter:
-                        if plugin.params[i].f_smooth_cutoff > 0:
-                            var coef = simple_lp_coef(plugin.params[i].f_smooth_cutoff, sample_rate)
-                            plugin.dsp_param_data[i].f_smooth_coef = coef
-                            plugin.ui_param_data[i].f_smooth_coef = coef
-                            plugin.smoothed_params.add(i)
-                        else:
-                            plugin.params[i].f_smooth_mode = smNone
-                    of smLerp:
-                        if plugin.params[i].f_smooth_ms > 0:
-                            var samples = uint64(floor(plugin.params[i].f_smooth_ms * sample_rate * 0.001))
-                            plugin.dsp_param_data[i].f_smooth_samples = samples
-                            plugin.ui_param_data[i].f_smooth_samples = samples
-                            plugin.smoothed_params.add(i)
-                        else:
-                            plugin.params[i].f_smooth_mode = smNone
-                    of smNone:
-                        discard
+            # if plugin.params[i].kind == pkFloat:
+            case plugin.params[i].smooth_mode:
+                of smFilter:
+                    if plugin.params[i].smooth_cutoff > 0:
+                        var coef = simple_lp_coef(plugin.params[i].smooth_cutoff, sample_rate)
+                        plugin.dsp_param_data[i].smooth_coef = coef
+                        plugin.ui_param_data[i].smooth_coef = coef
+                        plugin.smoothed_params.add(i)
+                    else:
+                        plugin.params[i].smooth_mode = smNone
+                of smLerp:
+                    if plugin.params[i].smooth_ms > 0:
+                        var samples = uint64(floor(plugin.params[i].smooth_ms * sample_rate * 0.001))
+                        plugin.dsp_param_data[i].smooth_samples = samples
+                        plugin.ui_param_data[i].smooth_samples = samples
+                        plugin.smoothed_params.add(i)
+                    else:
+                        plugin.params[i].smooth_mode = smNone
+                of smNone:
+                    discard
         # plugin.calc_cb_params = @[]
         # for i in 0 ..< len(plugin.params):
         #     if plugin.params[i].kind == pkFloat: # maybe int and bool should get calculate callbacks, this should handle that better than doing it in the 
