@@ -5,7 +5,7 @@ offbeat is mainly built around it managing parameters for you. simply define the
 
 there are numerous optional callbacks to shim in additional code, if needed, in many places. many are more theoretical, while others have a clear imagined use, like the calculate callback on smoothed float parameters, which has been added in large part to enable smooth but optimized filter coefficient calculation.
 
-depends on [nim-clap](https://github.com/morganholly/nim-clap). `nimble install clap`
+depends on [nim-clap](https://github.com/NimAudio/nim-clap). `nimble install clap`
 
 ---
 
